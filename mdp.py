@@ -17,6 +17,7 @@ class MDP:
         :param alpha: the proportionality constant when considering transitions
         :param k: the number of items in each state
         :param discount_factor: the discount factor for the MDP
+        :param verbose: flag to show steps
         :param save_path: the path to which models should be saved and loaded from
         """
 
@@ -210,9 +211,9 @@ class MDP:
         return self.mdp_i.games[self.policy[user_state]]
 
 
-if __name__ == '__main__':
-    rs = MDP(path='data-mini')
-    rs.initialise_mdp()
-    rs.policy_iteration(max_iteration=1000)
-    for user in rs.mdp_i.transactions:
-        print(rs.recommend(user))
+# if __name__ == '__main__':
+#     rs = MDP(path='data-mini')
+#     rs.initialise_mdp()
+#     rs.policy_iteration(max_iteration=1000)
+#     for user in rs.mdp_i.transactions:
+#         print(rs.recommend(user))
