@@ -23,13 +23,14 @@ class MDPInitializer:
         self.alpha = alpha
         self.total_sequences = {}
 
+        self.game_data = {}
         self.transactions = {}
         # Get user data and initialise transactions under each user
         self.fill_user_data()
         # Store transactions as { user_id : { game_title : [ play, purchase, play, ... ], ... }, ... }
         self.fill_transaction_data()
 
-        self.actions, self.games = self.get_action_data()
+        self.actions, self.games, self.game_price = self.get_action_data()
         self.num_of_actions = len(self.actions)
 
     def fill_user_data(self):
@@ -56,6 +57,13 @@ class MDPInitializer:
             for row in csv_f:
                 if row[1] not in self.transactions[row[0]]:
                     self.transactions[row[0]].append(row[1])
+                if row[1] not in self.game_data:
+                    self.game_data[row[1]] = [0, 0]
+                self.game_data[row[1]][0] += float(row[3])
+                self.game_data[row[1]][1] += 1
+
+        for game in self.game_data:
+            self.game_data[game] = self.game_data[game][0] / self.game_data[game][1]
 
     def get_action_data(self):
         """
@@ -65,13 +73,15 @@ class MDPInitializer:
 
         actions = []
         games = {}
+        game_price = {}
         with open(self.g_path) as f:
             csv_f = csv.reader(f)
             next(csv_f)
             for row in csv_f:
                 actions.append(row[0])
                 games[row[0]] = row[1]
-        return actions, games
+                game_price[row[0]] = int(row[2])
+        return actions, games, game_price
 
     def generate_initial_states(self):
         """
@@ -86,15 +96,15 @@ class MDPInitializer:
         for user in self.transactions:
             # Prepend Nones for first transactions
             pre = []
-            for i in range(self.k-1):
+            for i in range(self.k - 1):
                 pre.append(None)
             games = pre + self.transactions[user]
 
             # Generate states of k items
-            for i in range(0, len(games)-self.k+1):
+            for i in range(0, len(games) - self.k + 1):
                 temp_tup = ()
                 for j in range(self.k):
-                    temp_tup = temp_tup + (games[i+j],)
+                    temp_tup = temp_tup + (games[i + j],)
 
                 if temp_tup in states:
                     states[temp_tup] = states[temp_tup] + 1
@@ -108,10 +118,10 @@ class MDPInitializer:
                     policy[temp_tup] = random.choice(self.actions)
 
             # Generate states of k+1 items
-            for i in range(0, len(games)-self.k-1):
+            for i in range(0, len(games) - self.k - 1):
                 temp_tup = ()
-                for j in range(self.k+1):
-                    temp_tup = temp_tup + (games[i+j],)
+                for j in range(self.k + 1):
+                    temp_tup = temp_tup + (games[i + j],)
                 if temp_tup in self.total_sequences:
                     self.total_sequences[temp_tup] = self.total_sequences[temp_tup] + 1
                 else:
@@ -154,7 +164,7 @@ class MDPInitializer:
                 if action not in transitions[state]:
                     transitions[state][action] = {}
                 # Need to alpha * transition[state][action][n_state] as the action corresponds to the desired state
-                transitions[state][action][new_state] = (self.alpha * total_sequence_count/state_count,
+                transitions[state][action][new_state] = (self.alpha * total_sequence_count / state_count,
                                                          self.reward(new_state))
 
         # Adding the other possibilities and their probabilities for a particular action
@@ -169,7 +179,7 @@ class MDPInitializer:
 
                     # Need to beta * transition[state][a][n_state] as the action doesn't correspond to the desired state
                     if new_state not in transitions[state][action]:
-                        transitions[state][action][new_state] = (self.beta(state, action, new_state)
+                        transitions[state][action][new_state] = (self.beta(action, new_state)
                                                                  * transitions[state][a][new_state][0],
                                                                  self.reward(new_state))
 
@@ -181,20 +191,22 @@ class MDPInitializer:
                     total += transitions[state][action][new_state][0]
                 for new_state in transitions[state][action]:
                     old_tup = transitions[state][action][new_state]
-                    transitions[state][action][new_state] = (old_tup[0]/total, old_tup[1])
+                    transitions[state][action][new_state] = (old_tup[0] / total, old_tup[1])
 
         return transitions
 
-    def beta(self, state, action, new_state):
+    def beta(self, action, new_state):
         """
         Method to calculate the beta required
-        :param state: the initial state
         :param action: the action taken
         :param new_state: the new state
         :return: beta
         """
 
-        return 0.2
+        # The difference in number of hours per unit currency
+        diff = abs((self.game_data[action] / self.game_price[action]) -
+                   (self.game_data[new_state[self.k - 1]] / self.game_price[new_state[self.k - 1]]))
+        return diff / 120
 
     def reward(self, state):
         """
@@ -203,9 +215,15 @@ class MDPInitializer:
         :return: the reward for the given state
         """
 
-        return 1
+        spent = 0
+        for i in range(len(state) - 1):
+            if state[i] is None:
+                spent += 0
+            else:
+                spent += self.game_price[state[i]]
+        # The average amount spent before this purchase
+        if not len(state) == 1:
+            spent /= (len(state) - 1)
+        y = spent / self.game_price[state[self.k - 1]]
 
-
-# s = MDPInitializer('data', 3, 1)
-# print(s.generate_initial_states()[0])
-# print(s.total_sequences)
+        return (1 - y) * (self.game_data[state[self.k - 1]]) + y * (self.game_price[state[self.k - 1]])

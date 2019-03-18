@@ -143,7 +143,6 @@ class MDP:
             self.load_policy(start_where_left_off)
 
         # Start the policy iteration
-        stop_point = 0
         policy_prev = self.policy.copy()
         for i in range(max_iteration):
             self.print_progress("Iteration" + str(i) + ":")
@@ -158,13 +157,12 @@ class MDP:
             if i % 10 == 0:
                 if self.compare_policy(policy_prev):
                     self.print_progress("Policy converged at iteration " + str(i+1))
-                    stop_point = str(i+1)
                     break
                 policy_prev = self.policy.copy()
 
         # Save the model
         if to_save:
-            self.save_policy("mdp-model_" + stop_point + ".pkl")
+            self.save_policy("mdp-model_k=" + str(self.mdp_i.k) + ".pkl")
 
     def save_policy(self, filename):
         """
