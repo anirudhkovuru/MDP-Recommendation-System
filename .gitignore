@@ -1,3 +1,5 @@
 get_users.py
 .idea/
 __pycache__/
+saved-models/*.pkl
+mixture-models/*.pkl
