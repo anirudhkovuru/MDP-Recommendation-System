@@ -1,5 +1,4 @@
 from mdp import MDP
-import collections
 
 
 class MixtureModel:
@@ -44,25 +43,27 @@ class MixtureModel:
         """
         Method  to provide recommendations.
         :param user_id: the id of the user
-        :return: an ordered dictionary with the recommendations and their corresponding votes
+        :return: a list of tuples with the recommendations and their corresponding score
         """
 
-        recommendations = []
-        for i in range(1, self.k+1):
+        recommendations = {}
+        for i in range(2, self.k+1):
             # Initialise each MDP
             mm = MDP(path='data-mini', alpha=self.alpha, k=i,
                      discount_factor=self.df, verbose=False, save_path=self.save_path)
             # Load its corresponding policy
-            mm.load_policy("mdp-model_k=" + str(i) + ".pkl")
+            mm.load("mdp-model_k=" + str(i) + ".pkl")
             # Append the recommendation into the list
-            recommendations.append(mm.recommend(user_id))
+            rec_list = mm.recommend(user_id)
+            for rec in rec_list:
+                if rec[0] not in recommendations:
+                    recommendations[rec[0]] = 0
+                recommendations[rec[0]] += (1/self.k) * rec[1]
 
-        # Count the votes given by each model with equal weight
-        votes = collections.Counter(recommendations)
-        return collections.OrderedDict(sorted(votes.items(), key=lambda x: x[1], reverse=True))
+        # Sort according to value for each recommendation
+        return sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
 
 
-if __name__ == '__main__':
-    rs = MixtureModel(path='data-mini', k=4)
-    rs.generate_model()
-    print(rs.predict('151603712'))
+# if __name__ == '__main__':
+#     rs = MixtureModel(path='data-mini', k=10)
+#     print(rs.predict('151603712'))

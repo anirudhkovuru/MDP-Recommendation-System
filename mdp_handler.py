@@ -92,6 +92,7 @@ class MDPInitializer:
         states = {}
         state_value = {}
         policy = {}
+        policy_list = {}
 
         for user in self.transactions:
             # Prepend Nones for first transactions
@@ -109,13 +110,12 @@ class MDPInitializer:
                 if temp_tup in states:
                     states[temp_tup] = states[temp_tup] + 1
                 else:
-
-                    # if user == '14465359' and i==len(games)-self.k:
-                    #     print(temp_tup)
-
                     states[temp_tup] = 1
                     state_value[temp_tup] = 0
                     policy[temp_tup] = random.choice(self.actions)
+                    policy_list[temp_tup] = random.sample(self.actions, len(self.actions))
+                    for ind in range(len(policy_list[temp_tup])):
+                        policy_list[temp_tup][ind] = (policy_list[temp_tup][ind], 1)
 
             # Generate states of k+1 items
             for i in range(0, len(games) - self.k - 1):
@@ -127,7 +127,7 @@ class MDPInitializer:
                 else:
                     self.total_sequences[temp_tup] = 1
 
-        return states, state_value, policy
+        return states, state_value, policy, policy_list
 
     def generate_transitions(self, states, actions):
         """
@@ -215,15 +215,20 @@ class MDPInitializer:
         :return: the reward for the given state
         """
 
-        spent = 0
-        for i in range(len(state) - 1):
-            if state[i] is None:
-                spent += 0
-            else:
-                spent += self.game_price[state[i]]
-        # The average amount spent before this purchase
-        if not len(state) == 1:
-            spent /= (len(state) - 1)
-        y = spent / self.game_price[state[self.k - 1]]
+        # spent = 0
+        # for i in range(len(state) - 1):
+        #     if state[i] is None:
+        #         spent += 0
+        #     else:
+        #         spent += self.game_price[state[i]]
+        # # The average amount spent before this purchase
+        # if not len(state) == 1:
+        #     spent /= (len(state) - 1)
+        # y = spent / self.game_price[state[self.k - 1]]
+        #
+        # if y > 1:
+        #     y = 1/y
+        #
+        # return (1 - y) * (self.game_data[state[self.k - 1]]) + y * (self.game_price[state[self.k - 1]])
 
-        return (1 - y) * (self.game_data[state[self.k - 1]]) + y * (self.game_price[state[self.k - 1]])
+        return 1

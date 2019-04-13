@@ -36,6 +36,8 @@ class MDP:
         self.T = {}
         # The policy of the MDP
         self.policy = {}
+        # A policy list
+        self.policy_list = {}
 
     def print_progress(self, message):
         if self.verbose:
@@ -54,7 +56,7 @@ class MDP:
 
         # Initialising the states, state values, policy
         self.print_progress("Getting states, state-values, policy.")
-        self.S, self.V, self.policy = self.mdp_i.generate_initial_states()
+        self.S, self.V, self.policy, self.policy_list = self.mdp_i.generate_initial_states()
         self.print_progress("States, state-values, policy obtained.")
 
         # Initialise the transition table
@@ -95,6 +97,7 @@ class MDP:
 
             # The action with the highest action value is chosen
             self.policy[state] = max(action_values.items(), key=operator.itemgetter(1))[0]
+            self.policy_list[state] = sorted(action_values.items(), key=lambda kv: kv[1], reverse=True)
 
     def policy_eval(self):
         """
@@ -141,7 +144,7 @@ class MDP:
 
         # Load a previous model
         if start_where_left_off:
-            self.load_policy(start_where_left_off)
+            self.load(start_where_left_off)
 
         # Start the policy iteration
         policy_prev = self.policy.copy()
@@ -163,9 +166,9 @@ class MDP:
 
         # Save the model
         if to_save:
-            self.save_policy("mdp-model_k=" + str(self.mdp_i.k) + ".pkl")
+            self.save("mdp-model_k=" + str(self.mdp_i.k) + ".pkl")
 
-    def save_policy(self, filename):
+    def save(self, filename):
         """
         Method to save the trained model
         :param filename: the filename it should be saved as
@@ -175,9 +178,9 @@ class MDP:
         self.print_progress("Saving model to " + filename)
         os.makedirs(self.save_path, exist_ok=True)
         with open(self.save_path + "/" + filename, 'wb') as f:
-            pickle.dump(self.policy, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.__dict__, f, pickle.HIGHEST_PROTOCOL)
 
-    def load_policy(self, filename):
+    def load(self, filename):
         """
         Method to load a previous policy
         :param filename: the filename from which the model should be extracted
@@ -187,7 +190,8 @@ class MDP:
         self.print_progress("Loading model from " + filename)
         try:
             with open(self.save_path + "/" + filename, 'rb') as f:
-                self.policy = pickle.load(f)
+                tmp_dict = pickle.load(f)
+            self.__dict__.update(tmp_dict)
         except Exception as e:
             print(e)
 
@@ -198,22 +202,31 @@ class MDP:
         :return: the game that is recommended
         """
 
-        self.print_progress("Recommending for " + str(user_id))
+        # self.print_progress("Recommending for " + str(user_id))
         pre = []
         for i in range(self.mdp_i.k - 1):
             pre.append(None)
         games = pre + self.mdp_i.transactions[user_id]
 
+        # for g in games[self.mdp_i.k-1:]:
+        #     print(self.mdp_i.games[g], self.mdp_i.game_price[g])
+
         user_state = ()
         for i in range(len(games) - self.mdp_i.k, len(games)):
             user_state = user_state + (games[i],)
+        # print(self.mdp_i.game_price[self.policy[user_state]])
+        # return self.mdp_i.games[self.policy[user_state]]
 
-        return self.mdp_i.games[self.policy[user_state]]
+        rec_list = []
+        for game_details in self.policy_list[user_state]:
+            rec_list.append((self.mdp_i.games[game_details[0]], game_details[1]))
+
+        return rec_list
 
 
 # if __name__ == '__main__':
 #     rs = MDP(path='data-mini')
 #     rs.initialise_mdp()
-#     rs.policy_iteration(max_iteration=1000)
+#     rs.load('mdp-model_k=3.pkl')
 #     for user in rs.mdp_i.transactions:
 #         print(rs.recommend(user))
