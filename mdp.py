@@ -223,10 +223,75 @@ class MDP:
 
         return rec_list
 
+    def evaluate_decay_score(self, alpha=10):
+        """
+        Method to evaluate the given MDP using exponential decay score
+        :param alpha: a parameter in exponential decay score
+        :return: the average score
+        """
 
-# if __name__ == '__main__':
-#     rs = MDP(path='data-mini')
-#     rs.initialise_mdp()
-#     rs.load('mdp-model_k=3.pkl')
-#     for user in rs.mdp_i.transactions:
-#         print(rs.recommend(user))
+        transactions = self.mdp_i.transactions.copy()
+
+        user_count = 0
+        total_score = 0
+        # Generating a testing for each test case
+        for user in transactions:
+            total_list = len(transactions[user])
+            if total_list == 1:
+                continue
+
+            score = 0
+            for i in range(1, total_list):
+                self.mdp_i.transactions[user] = transactions[user][:i]
+
+                rec_list = self.recommend(user)
+                rec_list = [rec[0] for rec in rec_list]
+                m = rec_list.index(self.mdp_i.games[transactions[user][i]]) + 1
+                score += 2 ** ((1 - m) / (alpha - 1))
+
+            score /= (total_list - 1)
+            total_score += 100 * score
+            user_count += 1
+
+        return total_score / user_count
+
+    def evaluate_recommendation_score(self, m=10):
+        """
+        Function to evaluate the given MDP using exponential decay score
+        :param m: a parameter in recommendation score score
+        :return: the average score
+        """
+
+        transactions = self.mdp_i.transactions.copy()
+
+        user_count = 0
+        total_score = 0
+        # Generating a testing for each test case
+        for user in transactions:
+            total_list = len(transactions[user])
+            if total_list == 1:
+                continue
+
+            item_count = 0
+            for i in range(1, total_list):
+                self.mdp_i.transactions[user] = transactions[user][:i]
+
+                rec_list = self.recommend(user)
+                rec_list = [rec[0] for rec in rec_list]
+                rank = rec_list.index(self.mdp_i.games[transactions[user][i]]) + 1
+                if rank <= m:
+                    item_count += 1
+
+            score = item_count / (total_list - 1)
+            total_score += 100 * score
+            user_count += 1
+
+        return total_score / user_count
+
+
+if __name__ == '__main__':
+    rs = MDP(path='data-mini')
+    rs.load('mdp-model_k=3.pkl')
+    print(rs.evaluate_recommendation_score())
+    # for u in rs.mdp_i.transactions:
+    #     print(rs.recommend(u))
