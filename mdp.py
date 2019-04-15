@@ -182,7 +182,7 @@ class MDP:
 
     def load(self, filename):
         """
-        Method to load a previous policy
+        Method to load a previous trained model
         :param filename: the filename from which the model should be extracted
         :return: None
         """
@@ -192,6 +192,32 @@ class MDP:
             with open(self.save_path + "/" + filename, 'rb') as f:
                 tmp_dict = pickle.load(f)
             self.__dict__.update(tmp_dict)
+        except Exception as e:
+            print(e)
+
+    def save_policy(self, filename):
+        """
+        Method to save the policy
+        :param filename: the filename it should be saved as
+        :return: None
+        """
+
+        self.print_progress("Saving model to " + filename)
+        os.makedirs(self.save_path, exist_ok=True)
+        with open(self.save_path + "/" + filename, 'wb') as f:
+            pickle.dump(self.policy_list, f, pickle.HIGHEST_PROTOCOL)
+
+    def load_policy(self, filename):
+        """
+        Method to load a previous policy
+        :param filename: the filename from which the model should be extracted
+        :return: None
+        """
+
+        self.print_progress("Loading model from " + filename)
+        try:
+            with open(self.save_path + "/" + filename, 'rb') as f:
+                self.policy_list = pickle.load(f)
         except Exception as e:
             print(e)
 

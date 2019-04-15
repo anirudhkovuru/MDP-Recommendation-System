@@ -6,7 +6,7 @@ class MixtureModel:
     Class to implement mixture models of multiple MDPs.
     """
 
-    def __init__(self, path='data', alpha=1, k=3, discount_factor=0.999, verbose=True, save_path="mixture-models"):
+    def __init__(self, path='data-mini', alpha=1, k=3, discount_factor=0.999, verbose=True, save_path="mixture-models"):
         """
         The constructor for the MixtureModel class.
         :param path: path to data
@@ -33,7 +33,7 @@ class MixtureModel:
         # Generate models whose n-gram values change from 1...k
         for i in range(1, self.k+1):
             # Initialise the MDP
-            mm = MDP(path='data-mini', alpha=self.alpha, k=i,
+            mm = MDP(path=self.path, alpha=self.alpha, k=i,
                      discount_factor=self.df, verbose=self.verbose, save_path=self.save_path)
             mm.initialise_mdp()
             # Run the policy iteration and save the model
@@ -47,12 +47,12 @@ class MixtureModel:
         """
 
         recommendations = {}
-        for i in range(2, self.k+1):
+        for i in range(1, self.k+1):
             # Initialise each MDP
-            mm = MDP(path='data-mini', alpha=self.alpha, k=i,
-                     discount_factor=self.df, verbose=False, save_path=self.save_path)
+            mm = MDP(path=self.path, alpha=self.alpha, k=i,
+                     discount_factor=self.df, verbose=self.verbose, save_path=self.save_path)
             # Load its corresponding policy
-            mm.load("mdp-model_k=" + str(i) + ".pkl")
+            mm.load_policy("mdp-model_k=" + str(i) + ".pkl")
             # Append the recommendation into the list
             rec_list = mm.recommend(user_id)
             for rec in rec_list:
@@ -65,5 +65,5 @@ class MixtureModel:
 
 
 # if __name__ == '__main__':
-#     rs = MixtureModel(path='data-mini', k=10)
-#     print(rs.predict('151603712'))
+#     rs = MixtureModel(path='data-mini', k=3, verbose=False)
+#     print(rs.evaluate_recommendation_score())
