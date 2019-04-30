@@ -1,6 +1,7 @@
 import operator
 import pickle
 import os
+from tabulate import tabulate
 
 from mdp_handler import MDPInitializer
 
@@ -318,6 +319,8 @@ class MDP:
 if __name__ == '__main__':
     rs = MDP(path='data-mini')
     rs.load('mdp-model_k=3.pkl')
-    print(rs.evaluate_recommendation_score())
-    # for u in rs.mdp_i.transactions:
-    #     print(rs.recommend(u))
+    headers = ['Rank', 'Game', 'Score']
+    while True:
+        u = input("Enter a user ID: ")
+        r_list = rs.recommend(u)
+        print(tabulate([[ind+1, r[0], r[1]] for ind, r in enumerate(r_list)], headers, "psql"))

@@ -1,4 +1,5 @@
 from mdp import MDP
+from tabulate import tabulate
 
 
 class MixtureModel:
@@ -64,6 +65,11 @@ class MixtureModel:
         return sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
 
 
-# if __name__ == '__main__':
-#     rs = MixtureModel(path='data-mini', k=3, verbose=False)
-#     print(rs.evaluate_recommendation_score())
+if __name__ == '__main__':
+    rs = MixtureModel(path='data-mini', k=3, verbose=False)
+    headers = ['Rank', 'Game', 'Score']
+    while True:
+        u = input("Enter a user ID: ")
+        r_list = rs.predict(u)
+        print(tabulate([[ind + 1, r[0], r[1]] for ind, r in enumerate(r_list)], headers, "psql"))
+
